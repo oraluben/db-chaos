@@ -1,0 +1,1 @@
+FROM pingcap/pd:latest
