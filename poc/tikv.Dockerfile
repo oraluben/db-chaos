@@ -1,1 +1,0 @@
-FROM pingcap/tikv:latest
