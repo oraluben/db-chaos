@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apt-get update && apt-get install -y wget
+RUN apt-get update && apt-get install -y wget mysql-client tmux
 
 # RUN useradd tidb -m
 RUN useradd -m tidb && echo "tidb:tidb" | chpasswd && adduser tidb sudo && apt-get install sudo
