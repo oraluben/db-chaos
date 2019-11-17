@@ -3,13 +3,13 @@ from typing import Dict, Type, Optional
 from kubernetes import config, client
 from kubernetes.stream import stream
 
-from . import Test, TestBed, Node, DEFAULT_NAMESPACE
+from test_template import Test, TestBed, Node, DEFAULT_NAMESPACE
 
 
 class FakeEnv(TestBed):
-    @classmethod
-    def node_def(cls) -> Dict[Type[Node], int]:
-        from .nodes import PdNode, KvNode, DbNode
+    @staticmethod
+    def node_def() -> Dict[Type[Node], int]:
+        from test_template.nodes import PdNode, KvNode, DbNode
         return {
             PdNode: 3,
             KvNode: 3,
@@ -26,7 +26,7 @@ class FakeTest(Test):
         super()._init_env(env_init_interval)
 
     def _run_test(self):
-        from .nodes import DbNode
+        from test_template.nodes import DbNode
         db_nodes = self.env_instance.node_instances[DbNode]
         assert len(db_nodes) == 1
 
