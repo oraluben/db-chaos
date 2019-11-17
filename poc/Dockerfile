@@ -8,5 +8,6 @@ RUN useradd -m tidb && echo "tidb:tidb" | chpasswd && adduser tidb sudo && apt-g
 USER tidb
 WORKDIR /home/tidb/
 RUN wget -O - http://download.pingcap.org/tidb-v3.0-linux-amd64.tar.gz | tar xzf -
+RUN wget -O - https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar xzf -
 
-ENV PATH=/home/tidb/tidb-v3.0-linux-amd64/bin:${PATH}
+ENV PATH=/home/tidb/tidb-v3.0-linux-amd64/bin:/home/tidb/go/bin:${PATH}

@@ -1,0 +1,3 @@
+[submodule "tidb-bench"]
+	path = tidb-bench
+	url = git@github.com:pingcap/tidb-bench.git
