@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     name_ip = [(i.metadata.name, i.status.pod_ip) for i in ret.items]
 
-    assert len(name_ip) == 4
+    assert len(name_ip) == d['spec']['replicas']
     kvs = name_ip[:3]
     pd = name_ip[3]
 
@@ -67,7 +67,6 @@ if __name__ == '__main__':
                                         ' --path={pd_ip}:2379'
                                         ' --log-file=tidb.log'.format(pd_ip=pd[1]))
 
-    # wait for db
     mysql_probe = 'mysql -h {} -P 4000 -uroot -e "select tidb_version();"'.format(pd[1])
     for i in range(3):
         resp = stream(core.connect_get_namespaced_pod_exec, namespace='default',
@@ -77,6 +76,8 @@ if __name__ == '__main__':
         if 'tidb_version' in resp:
             print(resp)
             break
+        # wait for db to be ready
         sleep(3)
     else:
+        # could not get result, run shell to debug
         run('kubectl exec -ti {} -- /bin/bash'.format(pd[0]), shell=True)
