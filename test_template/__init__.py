@@ -7,7 +7,8 @@ from typing import List, Union, Type, Dict, Optional, Callable, Any
 from kubernetes.client import CoreV1Api, V1Pod, AppsV1Api, V1PodList
 from kubernetes.stream import stream
 
-from .logger import init_logger, LoggerMixin
+from .logger import init_logger
+from .mixins import LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin
 
 init_logger()
 
@@ -16,18 +17,6 @@ DEFAULT_NAMESPACE = 'default'
 
 def label_selector(label_dict: Dict[str, str]) -> str:
     return ','.join('{}={}'.format(*i) for i in label_dict.items())
-
-
-class CoreV1ApiMixin:
-    def __init__(self, api_core_v1: CoreV1Api, **kwargs):
-        super().__init__(**kwargs)
-        self.api_core_v1 = api_core_v1
-
-
-class AppsV1ApiMixin:
-    def __init__(self, api_apps_v1: AppsV1Api, **kwargs):
-        super().__init__(**kwargs)
-        self.api_apps_v1 = api_apps_v1
 
 
 class Node(LoggerMixin, CoreV1ApiMixin, ABC):

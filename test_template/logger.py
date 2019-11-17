@@ -22,11 +22,3 @@ def get_logger(name='__main__'):
     r.setLevel(logging.DEBUG)
     return r
 
-
-class LoggerMixin:
-    def __init__(self, logger_name: Optional[str] = None, **kwargs) -> None:
-        if logger_name is None:
-            logger_name = self.__class__.__name__
-        self.logger = get_logger(logger_name)
-        self.logger.setLevel(logging.DEBUG)
-        super().__init__(**kwargs)

@@ -7,7 +7,7 @@ from kubernetes import client, config
 from kubernetes.stream import stream
 
 from test_template import Test, TestBed, Node, DEFAULT_NAMESPACE, TestAction
-from test_template.actions import BashAction
+from test_template.mixins import LoggerMixin
 
 
 class SqlBenchEnv(TestBed):
@@ -22,7 +22,6 @@ class SqlBenchEnv(TestBed):
 
 
 class SsbBaseAction(TestAction, ABC):
-
     def __init__(self, test_instance: 'Test', **kwargs) -> None:
         super().__init__(test_instance, **kwargs)
 
@@ -61,21 +60,37 @@ class SsbDbAndTable(SsbBaseAction):
                stdout=True, tty=False)
 
 
-class SsbLoadData(SsbBaseAction):
+class SsbLoadData(LoggerMixin, SsbBaseAction):
     def run_action(self):
         load_sqls = [
             "mysql --local-infile=1 -h 127.0.0.1 -P 4000 -u root -D ssb -e"
             " \"load data local infile 'dbgen/{tb_name}.tbl'"
-            " into table {tb_name} fields terminated by '|' lines terminated by '\n';\"".format(tb_name=i)
+            " into table {tb_name} fields terminated by '|' lines terminated by '\\n';\"".format(tb_name=i)
             for i in ('part', 'supplier', 'customer', 'date', 'lineorder')
         ]
 
-        stream(self.test_instance.api_core_v1.connect_get_namespaced_pod_exec,
-               namespace=DEFAULT_NAMESPACE, name=self.db_node.pod_name,
-               command=['bash', '-c',
-                        'cd {base} && '.format(base=self.bench_base) + ' && '.join(load_sqls)],
-               stderr=True, stdin=False,
-               stdout=True, tty=False)
+        for sql_cmd in load_sqls:
+            self.logger.info('`{}`'.format(sql_cmd))
+            stream(self.test_instance.api_core_v1.connect_get_namespaced_pod_exec,
+                   namespace=DEFAULT_NAMESPACE, name=self.db_node.pod_name,
+                   command=['bash', '-c',
+                            'cd {base} && {sql}'.format(base=self.bench_base, sql=sql_cmd)],
+                   stderr=True, stdin=False,
+                   stdout=True, tty=False)
+
+
+class SsbQuery(LoggerMixin, SsbBaseAction):
+    def run_action(self):
+        for i in range(1, 14):
+            sql_cmd = 'mysql -h 127.0.0.1 -P 4000 -u root -D ssb < queries/{}.sql'.format(i)
+
+            self.logger.info('`{}`'.format(sql_cmd))
+            stream(self.test_instance.api_core_v1.connect_get_namespaced_pod_exec,
+                   namespace=DEFAULT_NAMESPACE, name=self.db_node.pod_name,
+                   command=['bash', '-c',
+                            'cd {base} && {sql}'.format(base=self.bench_base, sql=sql_cmd)],
+                   stderr=True, stdin=False,
+                   stdout=True, tty=False)
 
 
 class SqlBenchTest(Test):
@@ -85,7 +100,7 @@ class SqlBenchTest(Test):
             CopyBuildSsb,
             SsbDbAndTable,
             SsbLoadData,
-            BashAction,
+            SsbQuery,
         ]
 
     @staticmethod
