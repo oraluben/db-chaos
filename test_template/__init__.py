@@ -2,7 +2,7 @@ import random
 from abc import ABC
 from atexit import register as atexit_register
 from time import sleep, strftime
-from typing import List, Union, Type, Dict, Optional
+from typing import List, Union, Type, Dict, Optional, Callable, Any
 
 from kubernetes.client import CoreV1Api, V1Pod, AppsV1Api, V1PodList
 from kubernetes.stream import stream
@@ -151,11 +151,30 @@ class TestBed(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
                     sleep(interval)
 
 
+class TestAction(ABC):
+    test_instance: 'Test'
+
+    def __init__(self, test_instance: 'Test', **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.test_instance = test_instance
+
+    def run_action(self):
+        raise NotImplementedError()
+
+    @staticmethod
+    def assert_(cond: bool, msg: Optional[str] = None):
+        assert cond, msg
+
+
 class Test(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
     env_instance: TestBed
 
     @staticmethod
     def env() -> Type[TestBed]:
+        raise NotImplementedError()
+
+    @staticmethod
+    def test_action_instances() -> List[Type[TestAction]]:
         raise NotImplementedError()
 
     def __init__(self, api_core_v1: CoreV1Api, api_apps_v1: AppsV1Api, **kwargs) -> None:
@@ -174,4 +193,7 @@ class Test(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
         self.env_instance.start(env_init_interval)
 
     def _run_test(self):
-        raise NotImplementedError()
+        for action in self.test_action_instances():
+            action_instance = action(test_instance=self)
+            self.logger.info('running {}'.format(action_instance.__class__.__name__))
+            action_instance.run_action()
