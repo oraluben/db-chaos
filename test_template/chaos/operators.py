@@ -1,4 +1,5 @@
 from atexit import register
+from random import choice
 from typing import Union, Type, Optional, Dict
 
 from test_template import Node, DEFAULT_NAMESPACE
@@ -24,14 +25,10 @@ class NodeOffline(NetworkingV1ApiMixin, LoggerMixin, ChaosOperator):
         assert self.can_activate
         nodes = sum(self._mgr.env.node_instances.values(), [])
 
-        for i in range(len(nodes)):
-            if nodes[i].is_type(self.node_type):
-                # fixme: random select one node
-                # todo: abstract node selection
-                self.offline_node = nodes.pop(i)
-                break
-        else:
-            assert False, 'no nodes of type {}'.format(self.node_type)
+        # todo: abstract node selection
+        same_type_node_idx = [i for i in range(len(nodes)) if nodes[i].is_type(self.node_type)]
+        assert same_type_node_idx, 'no nodes of type {}'.format(self.node_type)
+        self.offline_node = nodes.pop(choice(same_type_node_idx))
 
         old_labels: Dict[str, str] = self._mgr.env.api_core_v1.read_namespaced_pod(
             name=self.offline_node.pod_name,

@@ -1,9 +1,10 @@
 from abc import ABC
+from random import choice, random
 from threading import Thread
 from time import sleep
 from typing import Optional, List
 
-from test_template import TestBed, TestAction, Test
+from test_template import TestBed, TestAction, Test, LoggerMixin
 
 
 class ChaosOperator(ABC):
@@ -28,9 +29,7 @@ class ChaosOperator(ABC):
         raise NotImplementedError()
 
 
-class ChaosManager:
-    # Create a thread to trigger chaos operations
-
+class ChaosManager(LoggerMixin):
     def __iadd__(self, op):
         assert isinstance(op, ChaosOperator)
         self.add_chaos_operator(op)
@@ -44,8 +43,6 @@ class ChaosManager:
     def add_chaos_operator(self, op: ChaosOperator):
         assert op not in self.ops
         self.ops.append(op)
-        # fixme: activate immediately to debug
-        op.activate()
 
     def remove_chaos_operator(self, op: ChaosOperator):
         idx = self.ops.index(op)
@@ -73,6 +70,10 @@ class ChaosManager:
 
         self.env = env
 
+        self.start()
+
+    # Create a thread to trigger chaos operations
+
     def start(self):
         self.worker.start()
 
@@ -82,8 +83,23 @@ class ChaosManager:
 
     def main(self):
         self.running = True
+        self.logger.info('chaos worker start')
         while self.running:
+            trigger_rate = 0.5
+            if trigger_rate < random():
+                op: ChaosOperator = choice(self.ops)
+                if op.can_activate:
+                    self.logger.info('activating {}'.format(op))
+                    op.activate()
+                elif op.can_deactivate:
+                    self.logger.info('deactivating {}'.format(op))
+                    op.deactivate()
+                else:
+                    self.logger.error('{} cannot be activated or deactivated, looks like there\'s an inconsistency.')
+
             sleep(self.polling_interval)
+
+        self.logger.info('chaos worker end')
 
 
 class ChaosAction(TestAction, ABC):
