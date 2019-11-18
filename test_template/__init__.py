@@ -163,7 +163,7 @@ class Test(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
         raise NotImplementedError()
 
     @staticmethod
-    def test_action_instances() -> List[Type[TestAction]]:
+    def test_actions() -> List[Type[TestAction]]:
         raise NotImplementedError()
 
     def __init__(self, api_core_v1: CoreV1Api, api_apps_v1: AppsV1Api, **kwargs) -> None:
@@ -182,7 +182,7 @@ class Test(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
         self.env_instance.start(env_init_interval)
 
     def _run_test(self):
-        for action in self.test_action_instances():
+        for action in self.test_actions():
             action_instance = action(test_instance=self)
             self.logger.info('running {}'.format(action_instance.__class__.__name__))
             action_instance.run_action()

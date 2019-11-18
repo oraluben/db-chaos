@@ -95,7 +95,7 @@ class SsbQuery(LoggerMixin, SsbBaseAction):
 
 class SqlBenchTest(Test):
     @staticmethod
-    def test_action_instances() -> List[Type[TestAction]]:
+    def test_actions() -> List[Type[TestAction]]:
         return [
             CopyBuildSsb,
             SsbDbAndTable,
