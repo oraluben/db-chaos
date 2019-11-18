@@ -93,9 +93,8 @@ class SsbQuery(LoggerMixin, SsbBaseAction):
                    stdout=True, tty=False)
 
 
-class SqlBenchTest(Test):
-    @staticmethod
-    def test_actions() -> List[Type[TestAction]]:
+class SsbTest(Test):
+    def test_actions(self) -> List[Type[TestAction]]:
         return [
             CopyBuildSsb,
             SsbDbAndTable,
@@ -110,4 +109,4 @@ class SqlBenchTest(Test):
 
 if __name__ == '__main__':
     config.load_kube_config()
-    SqlBenchTest(api_core_v1=client.CoreV1Api(), api_apps_v1=client.AppsV1Api()).start()
+    SsbTest(api_core_v1=client.CoreV1Api(), api_apps_v1=client.AppsV1Api()).start()

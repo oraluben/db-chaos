@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from kubernetes.client import AppsV1Api, CoreV1Api
+from kubernetes.client import AppsV1Api, CoreV1Api, NetworkingV1Api
 
 from .logger import get_logger
 
@@ -16,6 +16,12 @@ class AppsV1ApiMixin:
     def __init__(self, api_apps_v1: AppsV1Api, **kwargs):
         super().__init__(**kwargs)
         self.api_apps_v1 = api_apps_v1
+
+
+class NetworkingV1ApiMixin:
+    def __init__(self, api_net_v1: NetworkingV1Api, **kwargs):
+        super().__init__(**kwargs)
+        self.api_net_v1 = api_net_v1
 
 
 class LoggerMixin:

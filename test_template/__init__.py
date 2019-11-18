@@ -1,8 +1,7 @@
-import random
 from abc import ABC
-from atexit import register as atexit_register
+from atexit import register
 from time import sleep, strftime
-from typing import List, Union, Type, Dict, Optional, Callable, Any
+from typing import List, Union, Type, Dict, Optional
 
 from kubernetes.client import CoreV1Api, V1Pod, AppsV1Api, V1PodList
 from kubernetes.stream import stream
@@ -56,6 +55,7 @@ class Node(LoggerMixin, CoreV1ApiMixin, ABC):
         tmux_cmd = ['tmux', 'new-session', '-d', cmd]
         if session_name is not None:
             tmux_cmd += ['-s', session_name]
+        self.logger.debug('running {}'.format(tmux_cmd))
         return stream(self.api_core_v1.connect_get_namespaced_pod_exec, namespace=DEFAULT_NAMESPACE,
                       name=self.pod_name, command=tmux_cmd,
                       stderr=True, stdin=False,
@@ -66,6 +66,8 @@ class Node(LoggerMixin, CoreV1ApiMixin, ABC):
 
 
 class TestBed(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
+    label: Optional[Dict[str, str]] = None
+
     @staticmethod
     def node_def() -> Dict[Type[Node], int]:
         raise NotImplementedError()
@@ -73,8 +75,9 @@ class TestBed(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
     def create_deployment(self, node_count: int, wait_seconds=30, label: Optional[Dict[str, str]] = None) -> V1PodList:
         if label is None:
             label = {
-                'dpl-random-pod-label': '{}-{}'.format(random.randint(0, 10), random.randint(0, 10))
+                'dpl-random-pod-label': '0_{}_0'.format(hash(self))
             }
+        self.label = label
         same_label_pods = self.api_core_v1.list_namespaced_pod(
             namespace=DEFAULT_NAMESPACE,
             label_selector=label_selector(label))
@@ -96,7 +99,7 @@ class TestBed(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
         self.logger.info('creating deployment {}'.format(dpl_name))
         self.api_apps_v1.create_namespaced_deployment(namespace='default', body=dpl_template)
 
-        atexit_register(lambda: self.api_apps_v1.delete_namespaced_deployment(
+        register(lambda: self.api_apps_v1.delete_namespaced_deployment(
             namespace=DEFAULT_NAMESPACE, name=dpl_name))
 
         self.logger.info('waiting for pods')
@@ -162,8 +165,7 @@ class Test(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
     def env() -> Type[TestBed]:
         raise NotImplementedError()
 
-    @staticmethod
-    def test_actions() -> List[Type[TestAction]]:
+    def test_actions(self) -> List[Type[TestAction]]:
         raise NotImplementedError()
 
     def __init__(self, api_core_v1: CoreV1Api, api_apps_v1: AppsV1Api, **kwargs) -> None:

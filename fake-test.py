@@ -35,8 +35,7 @@ class FakeAction(TestAction):
 
 
 class FakeTest(Test):
-    @staticmethod
-    def test_actions() -> List[Type[TestAction]]:
+    def test_actions(self) -> List[Type[TestAction]]:
         return [
             partial(SleepAction, sleep_interval=10),
             FakeAction,

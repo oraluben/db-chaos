@@ -14,6 +14,8 @@ class _TiNode(Node):
 
 
 class PdNode(_TiNode):
+    name = 'pd'
+
     @property
     def ti_cmd(self) -> str:
         len_pd = len(self.same_type_nodes)
@@ -32,6 +34,8 @@ class PdNode(_TiNode):
 
 
 class KvNode(_TiNode):
+    name = 'kv'
+
     @property
     def ti_cmd(self) -> str:
         pd_ips = [i.pod_ip for i in self.env.node_instances[PdNode]]
@@ -44,6 +48,8 @@ class KvNode(_TiNode):
 
 
 class DbNode(_TiNode):
+    name = 'db'
+
     @property
     def ti_cmd(self) -> str:
         pd_ips = [i.pod_ip for i in self.env.node_instances[PdNode]]
