@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 
 def init_logger():
@@ -21,4 +20,3 @@ def get_logger(name='__main__'):
     r = getLogger(name)
     r.setLevel(logging.DEBUG)
     return r
-

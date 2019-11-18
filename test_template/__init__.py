@@ -1,8 +1,10 @@
 from abc import ABC
 from atexit import register
+from random import choice
 from time import sleep, strftime
-from typing import List, Union, Type, Dict, Optional
+from typing import List, Union, Type, Dict, Optional, TypeVar
 
+from kubernetes import client, config
 from kubernetes.client import CoreV1Api, V1Pod, AppsV1Api, V1PodList
 from kubernetes.stream import stream
 
@@ -18,6 +20,9 @@ def label_selector(label_dict: Dict[str, str]) -> str:
     return ','.join('{}={}'.format(*i) for i in label_dict.items())
 
 
+NodeType = Union[str, Type['Node']]
+
+
 class Node(LoggerMixin, CoreV1ApiMixin, ABC):
     image: str
     name: str
@@ -25,7 +30,7 @@ class Node(LoggerMixin, CoreV1ApiMixin, ABC):
     def __repr__(self) -> str:
         return '<{} as {}>'.format(self.pod_name, self.__class__.__qualname__)
 
-    def is_type(self, other: Union[str, Type['Node']]):
+    def is_type(self, other: NodeType):
         return self.name == (other if isinstance(other, str) else other.name)
 
     def __init__(self, api_core_v1: CoreV1Api, pod: V1Pod, env: 'TestBed', **kwargs):
@@ -188,3 +193,32 @@ class Test(LoggerMixin, CoreV1ApiMixin, AppsV1ApiMixin, ABC):
             action_instance = action(test_instance=self)
             self.logger.info('running {}'.format(action_instance.__class__.__name__))
             action_instance.run_action()
+        from .chaos import ChaosManager
+        ChaosManager(self.env_instance).stop()
+
+
+V = TypeVar('V')
+
+
+def pop_random(l: List[V]) -> Optional[V]:
+    if not l:
+        return None
+    rand_idx = choice([i for i in range(len(l))])
+    return l.pop(rand_idx)
+
+
+def get_label(node: Node) -> Dict[str, str]:
+    config.load_kube_config()
+    client.CoreV1Api()
+    return client.CoreV1Api().read_namespaced_pod(
+        name=node.pod_name,
+        namespace=DEFAULT_NAMESPACE).metadata.labels
+
+
+def update_label(node: Node, labels: Dict[str, str]):
+    config.load_kube_config()
+    client.CoreV1Api()
+    return client.CoreV1Api().patch_namespaced_pod(
+        name=node.pod_name,
+        namespace=DEFAULT_NAMESPACE,
+        body={'metadata': {'labels': labels}})

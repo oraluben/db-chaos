@@ -44,8 +44,6 @@ class CopyBuildSsb(SsbBaseAction):
                stderr=True, stdin=False,
                stdout=True, tty=False)
 
-        print(self.db_node)
-
 
 class SsbDbAndTable(SsbBaseAction):
     def run_action(self):

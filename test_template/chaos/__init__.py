@@ -26,7 +26,8 @@ class ChaosOperator(ABC):
 
     @property
     def can_deactivate(self) -> bool:
-        raise NotImplementedError()
+        # default use neg self.can_activate
+        return not self.can_activate
 
 
 class ChaosManager(LoggerMixin):
@@ -62,7 +63,7 @@ class ChaosManager(LoggerMixin):
     running: bool = False
     ops: List[ChaosOperator]
 
-    def __init__(self, env: TestBed) -> None:
+    def __init__(self, env: TestBed, start=True) -> None:
         super().__init__()
 
         self.worker = Thread(target=self.main)
@@ -70,7 +71,12 @@ class ChaosManager(LoggerMixin):
 
         self.env = env
 
-        self.start()
+        if start:
+            self.start()
+        else:
+            self.running = False
+            self.logger.info('waiting for chaos worker to terminate')
+            self.worker.join()
 
     # Create a thread to trigger chaos operations
 
@@ -86,7 +92,7 @@ class ChaosManager(LoggerMixin):
         self.logger.info('chaos worker start')
         while self.running:
             trigger_rate = 0.5
-            if trigger_rate < random():
+            if self.ops and trigger_rate < random():
                 op: ChaosOperator = choice(self.ops)
                 if op.can_activate:
                     self.logger.info('activating {}'.format(op))
