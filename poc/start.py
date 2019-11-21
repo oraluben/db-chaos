@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     core = client.CoreV1Api()
 
+    # wait for all pods
     while True:
         ret: V1PodList = core.list_namespaced_pod(
             namespace='default',
@@ -51,6 +52,7 @@ if __name__ == '__main__':
     kvs = name_ip[:3]
     pd = name_ip[3]
 
+    # Ref: https://pingcap.com/docs/stable/how-to/deploy/from-tarball/testing-environment/
     run_background_in_tmux(core, pd[0], 'pd-server --name=pd1 --data-dir=pd'
                                         ' --client-urls=http://{pd_ip}:2379'
                                         ' --peer-urls=http://{pd_ip}:2380'
@@ -68,6 +70,7 @@ if __name__ == '__main__':
                                         ' --log-file=tidb.log'.format(pd_ip=pd[1]))
 
     mysql_probe = 'mysql -h {} -P 4000 -uroot -e "select tidb_version();"'.format(pd[1])
+    # wait for db to be ready
     for i in range(3):
         resp = stream(core.connect_get_namespaced_pod_exec, namespace='default',
                       name=pd[0], command=['bash', '-c', mysql_probe],
@@ -76,7 +79,6 @@ if __name__ == '__main__':
         if 'tidb_version' in resp:
             print(resp)
             break
-        # wait for db to be ready
         sleep(3)
     else:
         # could not get result, run shell to debug
